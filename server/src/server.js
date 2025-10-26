@@ -20,10 +20,13 @@ const PORT = process.env.PORT || 5001;
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
-// CORS (React dev)
+// CORS (for local + Render)
 app.use(
     cors({
-        origin: "http://localhost:5173",
+        origin: [
+            process.env.CLIENT_ORIGIN || "http://localhost:5173",
+            "https://englishwebapp-nmtq.onrender.com",
+        ],
         credentials: true,
     })
 );
@@ -35,20 +38,27 @@ app.use(morgan("dev"));
 // DB
 await connectDB();
 
-// Static uploads (served at http://localhost:5001/uploads/xxx)
+// Serve uploaded files
 app.use("/uploads", express.static(path.join(__dirname, "../uploads")));
-
-// Health
-app.get("/", (_req, res) =>
-    res.send({ ok: true, service: "toeic-platform-server" })
-);
 
 // API routes
 app.use("/api/auth", authRoutes);
 app.use("/api/documents", documentRoutes);
 app.use("/api/mocktests", mockTestRoutes);
 
+// ✅ Serve frontend build
+const clientPath = path.join(__dirname, "../../client/dist");
+app.use(express.static(clientPath));
+
+// Health check
+app.get("/health", (_req, res) => res.send({ ok: true, service: "toeic-platform-server" }));
+
+// ✅ Catch-all → serve React index.html
+app.get("*", (req, res) => {
+    res.sendFile(path.join(clientPath, "index.html"));
+});
+
 // Start
 app.listen(PORT, () => {
-    console.log(`🚀 Server running on http://localhost:${PORT}`);
+    console.log(`🚀 Server running on port ${PORT}`);
 });
