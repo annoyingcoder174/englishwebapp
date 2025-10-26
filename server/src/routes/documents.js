@@ -25,7 +25,7 @@ const upload = multer({
     limits: { fileSize: 50 * 1024 * 1024 }, // 50MB
 });
 
-/** Pick a VALID enum for Document.section to avoid validation errors */
+/** Pick a valid section for Document */
 function pickValidSection(req) {
     const enumValues = Document.schema.path("section")?.options?.enum || [];
     const requested = (req.body.section || "").trim();
@@ -38,13 +38,13 @@ function pickValidSection(req) {
     return enumValues[0] || undefined;
 }
 
-/** List */
+/** List all documents */
 router.get("/", authRequired, async (_req, res) => {
     const docs = await Document.find({}).sort({ createdAt: -1 }).lean();
     res.json(docs);
 });
 
-/** Upload (admin only) -> returns { url, absoluteUrl } that work in the client */
+/** Upload (admin only) */
 router.post(
     "/upload",
     authRequired,
@@ -54,8 +54,7 @@ router.post(
         try {
             if (!req.file) {
                 return res.status(400).json({
-                    error:
-                        "No file received. Do not set Content-Type manually; use field name 'file'.",
+                    error: "No file received. Make sure to send field name 'file'.",
                 });
             }
 
@@ -72,8 +71,7 @@ router.post(
                     uploader: req.user.id,
                 });
             } catch (dbErr) {
-                // Keep upload successful even if metadata fails
-                console.error("Document.create warning:", dbErr?.message || dbErr);
+                console.error("⚠️ Document.create failed:", dbErr.message);
             }
 
             res.json({
@@ -86,10 +84,28 @@ router.post(
                 size: req.file.size,
             });
         } catch (e) {
-            console.error("Upload failed:", e?.message || e);
-            res.status(400).json({ error: "Upload failed" });
+            console.error("❌ Upload failed:", e);
+            res.status(500).json({ error: "Upload failed" });
         }
     }
 );
+
+/** Delete document (admin only) */
+router.delete("/:id", authRequired, requireRole("admin"), async (req, res) => {
+    try {
+        const doc = await Document.findById(req.params.id);
+        if (!doc) return res.status(404).json({ error: "Document not found" });
+
+        // Delete physical file if exists
+        const filePath = path.join(process.cwd(), doc.fileUrl);
+        if (fs.existsSync(filePath)) fs.unlinkSync(filePath);
+
+        await doc.deleteOne();
+        res.json({ ok: true, message: "Document deleted" });
+    } catch (err) {
+        console.error("Delete failed:", err);
+        res.status(500).json({ error: "Failed to delete document" });
+    }
+});
 
 export default router;

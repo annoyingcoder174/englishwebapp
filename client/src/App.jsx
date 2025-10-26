@@ -7,14 +7,14 @@ import Register from "./pages/Register.jsx";
 // Student pages
 import Study from "./pages/student/Study.jsx";
 import MockTestRunner from "./pages/student/MockTestRunner.jsx";
-import MockReviewPage from "./pages/student/MockReviewPage.jsx"; // <-- ADD
+import MockReviewPage from "./pages/student/MockReviewPage.jsx";
 
 // Admin pages
 import AdminDashboard from "./pages/admin/AdminDashboard.jsx";
 import ManageDocuments from "./pages/admin/ManageDocuments.jsx";
 import ManageUsers from "./pages/admin/ManageUsers.jsx";
 import QuickCreate from "./pages/admin/QuickCreate.jsx";
-// If you added a Builder: import MockBuilder from "./pages/admin/MockBuilder.jsx";
+import MockBuilder from "./pages/admin/MockBuilder.jsx"; // ✅ ADD THIS
 
 // Shared
 import PrivateRoute from "./components/PrivateRoute.jsx";
@@ -24,11 +24,11 @@ function App() {
   return (
     <Router>
       <Routes>
-        {/* Public */}
+        {/* 🌐 Public */}
         <Route path="/" element={<Login />} />
         <Route path="/register" element={<Register />} />
 
-        {/* Student */}
+        {/* 🎓 Student */}
         <Route
           path="/study"
           element={
@@ -46,7 +46,7 @@ function App() {
           }
         />
         <Route
-          path="/mock/:id/review" // <-- ADD review route
+          path="/mock/:id/review"
           element={
             <PrivateRoute>
               <MockReviewPage />
@@ -54,7 +54,7 @@ function App() {
           }
         />
 
-        {/* Admin (nested) */}
+        {/* 🛠️ Admin */}
         <Route
           path="/admin"
           element={
@@ -63,14 +63,17 @@ function App() {
             </PrivateRoute>
           }
         >
+          {/* Redirect /admin → /admin/documents */}
           <Route index element={<Navigate to="documents" replace />} />
+
+          {/* Sub routes */}
           <Route path="documents" element={<ManageDocuments />} />
           <Route path="users" element={<ManageUsers />} />
           <Route path="mock/quick" element={<QuickCreate />} />
-          {/* <Route path="mock/builder" element={<MockBuilder />} /> */}
+          <Route path="mock/builder" element={<MockBuilder />} /> {/* ✅ FIXED */}
         </Route>
 
-        {/* 404 */}
+        {/* 🚫 404 */}
         <Route path="*" element={<NotFound />} />
       </Routes>
     </Router>
