@@ -147,7 +147,7 @@ export default function ManageDocuments() {
                                     <div className="font-semibold">{d.title}</div>
                                     <div className="text-sm text-gray-500">{d.section}</div>
                                     <a
-                                        href={`http://localhost:5001${d.fileUrl}`}
+                                        href={`${import.meta.env.VITE_API_URL.replace('/api', '')}${d.fileUrl}`}
                                         target="_blank"
                                         rel="noreferrer"
                                         className="text-blue-600 underline text-sm"
