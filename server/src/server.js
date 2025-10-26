@@ -12,53 +12,48 @@ import authRoutes from "./routes/auth.js";
 import documentRoutes from "./routes/documents.js";
 import mockTestRoutes from "./routes/mocktests.js";
 
-// Setup
 const app = express();
 const PORT = process.env.PORT || 5001;
 
-// __dirname for ESM
+// Needed for __dirname in ESM
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
-// CORS (for local + Render)
+// ✅ CORS - allow both local and deployed frontend
 app.use(
     cors({
         origin: [
-            process.env.CLIENT_ORIGIN || "http://localhost:5173",
-            "https://englishwebapp-nmtq.onrender.com",
+            "http://localhost:5173",
+            process.env.CLIENT_ORIGIN || "https://englishwebapp-nmtq.onrender.com",
         ],
         credentials: true,
     })
 );
 
-// Middleware
 app.use(express.json({ limit: "5mb" }));
 app.use(morgan("dev"));
 
-// DB
+// ✅ Connect database
 await connectDB();
 
-// Serve uploaded files
-app.use("/uploads", express.static(path.join(__dirname, "../uploads")));
+// ✅ Serve uploaded media (mp3, images)
+app.use("/uploads", express.static(path.join(process.cwd(), "uploads")));
 
-// API routes
+// ✅ API routes
 app.use("/api/auth", authRoutes);
 app.use("/api/documents", documentRoutes);
 app.use("/api/mocktests", mockTestRoutes);
 
-// ✅ Serve frontend build
-const clientPath = path.join(__dirname, "../../client/dist");
-app.use(express.static(clientPath));
+// ✅ Serve React frontend
+const clientBuildPath = path.join(__dirname, "../../client/dist");
+app.use(express.static(clientBuildPath));
 
-// Health check
-app.get("/health", (_req, res) => res.send({ ok: true, service: "toeic-platform-server" }));
-
-// ✅ Catch-all → serve React index.html
-app.get("*", (req, res) => {
-    res.sendFile(path.join(clientPath, "index.html"));
+// ✅ Handle all other routes by sending index.html
+app.get("*", (_req, res) => {
+    res.sendFile(path.join(clientBuildPath, "index.html"));
 });
 
-// Start
+// ✅ Start the server
 app.listen(PORT, () => {
     console.log(`🚀 Server running on port ${PORT}`);
 });
