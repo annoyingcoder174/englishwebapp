@@ -1,0 +1,55 @@
+# === Node.js ===
+node_modules/
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+
+# === Build outputs ===
+dist/
+build/
+.cache/
+.next/
+out/
+.tmp/
+.DS_Store
+
+# === Logs ===
+logs
+*.log
+*.log.*
+pids
+*.pid
+*.seed
+*.pid.lock
+
+# === Env files ===
+.env
+.env.local
+.env.development
+.env.production
+.env.test
+
+# === IDEs & Editors ===
+.vscode/
+.idea/
+*.swp
+
+# === OS ===
+.DS_Store
+Thumbs.db
+
+# === Uploads ===
+uploads/
+
+# === Vite (client) ===
+client/dist/
+client/node_modules/
+
+# === Server (backend) ===
+server/node_modules/
+server/uploads/
+
+# === Misc ===
+coverage/
+*.tgz
