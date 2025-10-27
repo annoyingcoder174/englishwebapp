@@ -180,7 +180,10 @@ export default function MockTestRunner() {
         setSavedAnswers(map);
         // keep any local unsaved stuff merged, but ensure section answers are there
         setDraftAnswers((prev) => ({ ...map, ...prev }));
+        if (sectionName !== prevSectionNameRef.current) {
         setCurrentIdx(0);
+    }
+        prevSectionNameRef.current = sectionName;
     }, [submission, sectionName]);
 
     // current question + its group
