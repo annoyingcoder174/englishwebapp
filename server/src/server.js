@@ -4,10 +4,12 @@ import express from "express";
 import cors from "cors";
 import morgan from "morgan";
 import path from "path";
+import fs from "fs";
 import { fileURLToPath } from "url";
 
 import { connectDB } from "./utils/db.js";
 
+// routes
 import authRoutes from "./routes/auth.js";
 import documentRoutes from "./routes/documents.js";
 import mockTestRoutes from "./routes/mocktests.js";
@@ -16,40 +18,27 @@ const app = express();
 const PORT = process.env.PORT || 5001;
 
 /* -------------------------------------------------
-   __dirname shim (ESM)
+   __dirname shim for ES modules
 ------------------------------------------------- */
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
 /* -------------------------------------------------
-   Paths
-------------------------------------------------- */
-const clientDistPath = path.join(__dirname, "../../client/dist");
-const uploadsDir = path.join(__dirname, "../uploads");
+   CORS
+   🔥 FIX: allow all origins.
+   Why: when your built React app (served by THIS SAME server)
+   asks for /assets/*.js or /api/... it sends an Origin header.
+   Our previous strict allowlist was incorrectly rejecting that
+   Origin in production and returning a 500 for the JS bundle.
+   No JS => blank white screen.
 
-/* -------------------------------------------------
-   CORS allowlist
+   We'll allow everything. If you want to lock it down later,
+   we can reintroduce an allowlist once everything is stable.
 ------------------------------------------------- */
-const allowedOrigins = [
-    "http://localhost:5173",
-    "http://127.0.0.1:5173",
-    process.env.FRONTEND_ORIGIN || ""
-].filter(Boolean);
-
 app.use(
     cors({
-        origin(origin, cb) {
-            // No origin (curl/Postman/SSR preflight) => allow
-            if (!origin) return cb(null, true);
-
-            if (allowedOrigins.includes(origin)) {
-                return cb(null, true);
-            }
-
-            console.warn("[CORS] Blocked origin:", origin);
-            return cb(new Error("CORS not allowed from " + origin), false);
-        },
-        credentials: true
+        origin: true,          // reflect request Origin
+        credentials: true,
     })
 );
 
@@ -60,27 +49,17 @@ app.use(express.json({ limit: "5mb" }));
 app.use(morgan("dev"));
 
 /* -------------------------------------------------
-   DB connect
+   Connect DB
 ------------------------------------------------- */
 await connectDB();
 
 /* -------------------------------------------------
-   Static assets:
-   1. /uploads -> teacher-uploaded audio/images/etc
-   2. /api/uploads -> backwards compat
-   3. clientDistPath -> the built React app
+   STATIC: teacher uploads
+   /uploads/* and /api/uploads/* both work
 ------------------------------------------------- */
+const uploadsDir = path.join(__dirname, "../uploads");
 app.use("/uploads", express.static(uploadsDir));
 app.use("/api/uploads", express.static(uploadsDir));
-
-app.use(express.static(clientDistPath));
-
-/* -------------------------------------------------
-   Health check
-------------------------------------------------- */
-app.get("/api", (_req, res) => {
-    res.json({ ok: true, service: "toeic-platform-server" });
-});
 
 /* -------------------------------------------------
    API routes
@@ -90,21 +69,43 @@ app.use("/api/documents", documentRoutes);
 app.use("/api/mocktests", mockTestRoutes);
 
 /* -------------------------------------------------
-   API 404 (explicit)
+   Health check
 ------------------------------------------------- */
-app.use("/api/*", (_req, res) => {
-    res.status(404).json({ error: "Not Found" });
+app.get("/api", (_req, res) => {
+    res.json({ ok: true, service: "toeic-platform-server" });
 });
 
 /* -------------------------------------------------
-   React Router fallback
-   (any non-/api route goes to index.html)
+   Serve React build (client-build)
+   The Render build step copies client/dist -> server/client-build
 ------------------------------------------------- */
-app.get("*", (req, res) => {
-    if (req.path.startsWith("/api/")) {
-        return res.status(404).json({ error: "Not Found" });
-    }
-    return res.sendFile(path.join(clientDistPath, "index.html"));
+const clientBuildDir = path.join(__dirname, "../client-build");
+
+// Serve static frontend assets (js, css, images)
+if (fs.existsSync(clientBuildDir)) {
+    app.use(express.static(clientBuildDir));
+
+    // For ANY GET request that is not /api/* or /uploads/*,
+    // send index.html so React Router can handle /study, /mock/:id/run, etc.
+    app.get("*", (req, res, next) => {
+        if (req.path.startsWith("/api") || req.path.startsWith("/uploads")) {
+            return next();
+        }
+
+        const indexPath = path.join(clientBuildDir, "index.html");
+        if (fs.existsSync(indexPath)) {
+            return res.sendFile(indexPath);
+        }
+
+        return res.status(500).send("Client build not found");
+    });
+}
+
+/* -------------------------------------------------
+   API 404 fallback (for unknown /api/... routes)
+------------------------------------------------- */
+app.use("/api/*", (_req, res) => {
+    res.status(404).json({ error: "Not Found" });
 });
 
 /* -------------------------------------------------
@@ -112,9 +113,4 @@ app.get("*", (req, res) => {
 ------------------------------------------------- */
 app.listen(PORT, () => {
     console.log(`🚀 Server running on http://localhost:${PORT}`);
-    if (allowedOrigins.length) {
-        console.log("[CORS allowlist]", allowedOrigins.join(", "));
-    } else {
-        console.log("[CORS allowlist] (none / same-origin only)");
-    }
 });
