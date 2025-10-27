@@ -1,3 +1,4 @@
+// server/src/server.js
 import "dotenv/config";
 import express from "express";
 import cors from "cors";
@@ -7,7 +8,7 @@ import { fileURLToPath } from "url";
 
 import { connectDB } from "./utils/db.js";
 
-// Routes
+// routes
 import authRoutes from "./routes/auth.js";
 import documentRoutes from "./routes/documents.js";
 import mockTestRoutes from "./routes/mocktests.js";
@@ -15,45 +16,91 @@ import mockTestRoutes from "./routes/mocktests.js";
 const app = express();
 const PORT = process.env.PORT || 5001;
 
-// Needed for __dirname in ESM
+/* -------------------------------------------------
+   __dirname shim for ES modules
+------------------------------------------------- */
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
-// ✅ CORS - allow both local and deployed frontend
+/* -------------------------------------------------
+   CORS
+   - allow dev Vite
+   - allow deployed frontend
+   - (optional) allow FRONTEND_ORIGIN from .env
+------------------------------------------------- */
+const allowedOrigins = [
+    "http://localhost:5173",
+    "http://127.0.0.1:5173",
+    "https://englishwebapp-nmtq.onrender.com",
+].concat(process.env.FRONTEND_ORIGIN ? [process.env.FRONTEND_ORIGIN] : []);
+
 app.use(
     cors({
-        origin: [
-            "http://localhost:5173",
-            process.env.CLIENT_ORIGIN || "https://englishwebapp-nmtq.onrender.com",
-        ],
+        origin(origin, cb) {
+            // no origin (curl, Postman) -> allow
+            if (!origin) return cb(null, true);
+
+            if (allowedOrigins.includes(origin)) {
+                return cb(null, true);
+            }
+
+            // Block anything else in prod-ish way
+            console.warn("[CORS] Blocked origin:", origin);
+            return cb(new Error("CORS not allowed from " + origin), false);
+        },
         credentials: true,
     })
 );
 
+/* -------------------------------------------------
+   Body parser + logger
+------------------------------------------------- */
 app.use(express.json({ limit: "5mb" }));
 app.use(morgan("dev"));
 
-// ✅ Connect database
+/* -------------------------------------------------
+   DB connect
+------------------------------------------------- */
 await connectDB();
 
-// ✅ Serve uploaded media (mp3, images)
-app.use("/uploads", express.static(path.join(process.cwd(), "uploads")));
+/* -------------------------------------------------
+   STATIC UPLOADS
+   We save teacher uploads under /uploads on disk.
+   We expose them two ways so old links keep working:
+   - GET /uploads/filename.ext
+   - GET /api/uploads/filename.ext
+------------------------------------------------- */
+const uploadsDir = path.join(__dirname, "../uploads");
+app.use("/uploads", express.static(uploadsDir));
+app.use("/api/uploads", express.static(uploadsDir));
 
-// ✅ API routes
+/* -------------------------------------------------
+   Health check
+------------------------------------------------- */
+app.get("/api", (_req, res) => {
+    res.json({ ok: true, service: "toeic-platform-server" });
+});
+
+/* -------------------------------------------------
+   API routes
+------------------------------------------------- */
 app.use("/api/auth", authRoutes);
 app.use("/api/documents", documentRoutes);
 app.use("/api/mocktests", mockTestRoutes);
 
-// ✅ Serve React frontend
-const clientBuildPath = path.join(__dirname, "../../client/dist");
-app.use(express.static(clientBuildPath));
-
-// ✅ Handle all other routes by sending index.html
-app.get("*", (_req, res) => {
-    res.sendFile(path.join(clientBuildPath, "index.html"));
+/* -------------------------------------------------
+   API 404 fallback
+   (Front-end routing like /mock/:id/run is handled
+    by Vite dev server / React Router, NOT here.)
+------------------------------------------------- */
+app.use("/api/*", (_req, res) => {
+    res.status(404).json({ error: "Not Found" });
 });
 
-// ✅ Start the server
+/* -------------------------------------------------
+   Start server
+------------------------------------------------- */
 app.listen(PORT, () => {
-    console.log(`🚀 Server running on port ${PORT}`);
+    console.log(`🚀 Server running on http://localhost:${PORT}`);
+    console.log(`[CORS allowlist] ${allowedOrigins.join(", ")}`);
 });

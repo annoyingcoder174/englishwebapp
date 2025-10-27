@@ -34,7 +34,7 @@ export default function Register() {
         <div className="flex items-center justify-center min-h-screen bg-blue-50">
             <div className="bg-white p-8 rounded-2xl shadow-lg w-full max-w-md">
                 <h2 className="text-3xl font-bold text-center text-blue-700 mb-6">
-                    Tạo acc đi Lanh
+                    Tạo acc đi ae!
                 </h2>
 
                 {error && <p className="text-red-500 text-sm mb-2 text-center">{error}</p>}
@@ -45,7 +45,7 @@ export default function Register() {
                         <label className="block text-sm font-medium text-gray-600 mb-1">Tên gì d?</label>
                         <input
                             type="text"
-                            placeholder="Lanhsuy"
+                            placeholder="Ten ae la gi"
                             value={name}
                             onChange={(e) => setName(e.target.value)}
                             required
@@ -57,7 +57,7 @@ export default function Register() {
                         <label className="block text-sm font-medium text-gray-600 mb-1">Mail</label>
                         <input
                             type="email"
-                            placeholder="lanhsuy@badtrip.com"
+                            placeholder="suy@badtrip.com"
                             value={email}
                             onChange={(e) => setEmail(e.target.value)}
                             required
@@ -69,7 +69,7 @@ export default function Register() {
                         <label className="block text-sm font-medium text-gray-600 mb-1">Sít rịt khẩu</label>
                         <input
                             type="password"
-                            placeholder="yourhoneyname"
+                            placeholder="gicungduoc"
                             value={password}
                             onChange={(e) => setPassword(e.target.value)}
                             required
