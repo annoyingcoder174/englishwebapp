@@ -185,6 +185,7 @@ export default function MockTestRunner() {
     }
         prevSectionNameRef.current = sectionName;
     }, [submission, sectionName]);
+    const prevSectionNameRef = useRef(null)
 
     // current question + its group
     const currentQ = flatQuestions[currentIdx] || null;
