@@ -1,8 +1,12 @@
 {
   "name": "toeic-platform-server",
   "version": "0.1.0",
+  "description": "Backend for TOEIC/IELTS practice platform (serves API + built React app)",
   "type": "module",
   "main": "src/server.js",
+  "engines": {
+    "node": ">=18.x"
+  },
   "scripts": {
     "dev": "nodemon src/server.js",
     "start": "node src/server.js"
