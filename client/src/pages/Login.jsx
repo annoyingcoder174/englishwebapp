@@ -1,8 +1,8 @@
-// client/src/pages/Login.jsx
 import { useState } from "react";
 import { useNavigate, Link } from "react-router-dom";
 import { useAuth } from "../context/AuthContext.jsx";
 import api from "../utils/api";
+import Footer from "../components/Footer.jsx";
 
 export default function Login() {
     const [email, setEmail] = useState("");
@@ -16,6 +16,7 @@ export default function Login() {
     const handleSubmit = async (e) => {
         e.preventDefault();
         setError("");
+        setBusy(true);
 
         try {
             const res = await api.post("/auth/login", {
@@ -33,75 +34,82 @@ export default function Login() {
             if (res.data.role === "admin") {
                 navigate("/admin/documents");
             } else {
-                navigate("/study/home"); // <--- go to new dashboard
+                navigate("/study/home");
             }
         } catch (err) {
             setError(err.response?.data?.error || "Đăng nhập thất bại");
+        } finally {
+            setBusy(false);
         }
     };
 
-
     return (
-        <div className="flex items-center justify-center min-h-screen bg-blue-50">
-            <div className="bg-white p-8 rounded-2xl shadow-lg w-full max-w-md animate-fade-in">
-                <h2 className="text-3xl font-bold text-center text-blue-700 mb-6">
-                    Chỗ AE Login học Toeic/IELTS
-                </h2>
+        <div className="min-h-screen flex flex-col bg-blue-50">
+            {/* main card */}
+            <main className="flex-1 flex items-center justify-center p-4">
+                <div className="bg-white p-8 rounded-2xl shadow-lg w-full max-w-md animate-fade-in">
+                    <h2 className="text-3xl font-bold text-center text-blue-700 mb-6">
+                        Chỗ AE Login học Toeic/IELTS
+                    </h2>
 
-                {error && (
-                    <div className="mb-4 text-red-500 text-sm text-center">
-                        {error}
-                    </div>
-                )}
+                    {error && (
+                        <div className="mb-4 text-red-500 text-sm text-center">
+                            {error}
+                        </div>
+                    )}
 
-                <form onSubmit={handleSubmit} className="space-y-4">
-                    <div>
-                        <label className="block text-sm font-medium text-gray-600 mb-1">
-                            Email
-                        </label>
-                        <input
-                            type="email"
-                            className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring focus:ring-blue-200"
-                            placeholder="suy@badtrip.com"
-                            value={email}
-                            onChange={(e) => setEmail(e.target.value)}
-                            required
-                        />
-                    </div>
+                    <form onSubmit={handleSubmit} className="space-y-4">
+                        <div>
+                            <label className="block text-sm font-medium text-gray-600 mb-1">
+                                Email
+                            </label>
+                            <input
+                                type="email"
+                                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring focus:ring-blue-200"
+                                placeholder="suy@badtrip.com"
+                                value={email}
+                                onChange={(e) => setEmail(e.target.value)}
+                                required
+                            />
+                        </div>
 
-                    <div>
-                        <label className="block text-sm font-medium text-gray-600 mb-1">
-                            Mật khẩu
-                        </label>
-                        <input
-                            type="password"
-                            className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring focus:ring-blue-200"
-                            placeholder="********"
-                            value={password}
-                            onChange={(e) => setPassword(e.target.value)}
-                            required
-                        />
-                    </div>
+                        <div>
+                            <label className="block text-sm font-medium text-gray-600 mb-1">
+                                Mật khẩu
+                            </label>
+                            <input
+                                type="password"
+                                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring focus:ring-blue-200"
+                                placeholder="********"
+                                value={password}
+                                onChange={(e) => setPassword(e.target.value)}
+                                required
+                            />
+                        </div>
 
-                    <button
-                        type="submit"
-                        disabled={busy}
-                        className="w-full bg-blue-600 hover:bg-blue-700 text-white font-semibold py-2 rounded-lg transition disabled:opacity-50 btn-press"
-                    >
-                        {busy ? "Đang vào..." : "Vô"}
-                    </button>
-                </form>
+                        <button
+                            type="submit"
+                            disabled={busy}
+                            className="w-full bg-blue-600 hover:bg-blue-700 text-white font-semibold py-2 rounded-lg transition disabled:opacity-50 btn-press"
+                        >
+                            {busy ? "Đang vào..." : "Vô"}
+                        </button>
+                    </form>
 
-                <p className="text-center text-sm text-gray-500 mt-4">
-                    Chưa tạo acc thì vô đây tạo đi AE?{" "}
-                    <Link
-                        to="/register"
-                        className="text-blue-600 hover:underline font-medium"
-                    >
-                        Tạo Acc
-                    </Link>
-                </p>
-            </div>
+                    <p className="text-center text-sm text-gray-500 mt-4">
+                        Chưa tạo acc thì vô đây tạo đi AE?{" "}
+                        <Link
+                            to="/register"
+                            className="text-blue-600 hover:underline font-medium"
+                        >
+                            Tạo Acc
+                        </Link>
+                    </p>
+                </div>
+            </main>
+
+            {/* global footer */}
+            <Footer />
         </div>
     );
 }
